@@ -15,5 +15,8 @@
 		"out": "docs",
 		"excludePrivate": true
 	},
+	"include": [
+		"src/**.ts"
+	],
 	"exclude": ["node_modules/**", "dist/**"]
 }
