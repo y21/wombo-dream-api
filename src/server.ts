@@ -21,9 +21,12 @@ polka()
 
         const wombo = WomboDream.buildDefaultInstance();
         try {
-            const task = await wombo.generatePicture(message, Number(style));
+            const task = wombo.generatePicture(message, Number(style));
+            const timeout = new Promise((resolve, reject) => setTimeout(reject, 20000, 'task timed out'));
+
+            const result = await Promise.race([task, timeout]);
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(task));
+            res.end(JSON.stringify(result));
         } catch (e) {
             console.log(e);
             return reject(res, 500, 'Failed to process wombo request');
