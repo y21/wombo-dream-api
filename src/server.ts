@@ -6,30 +6,48 @@ const port = process.env.PORT || 3030;
 
 console.log(`Listening on port ${port}`);
 
-function reject(res: http.ServerResponse, status: number, message: string) {
-    res.writeHead(status);
-    res.end(message);
+enum ErrorCode {
+    MALFORMED_QUERY,
+    TIMEOUT,
+    RATELIMIT,
+    TASK_FAIL
 }
+
+function reject(res: http.ServerResponse, error: ErrorCode) {
+    res.writeHead(500, {
+        'Content-Type': 'application/json'
+    });
+    res.end(JSON.stringify({ code: error }));
+}
+
+class TimeoutError extends Error { }
 
 polka()
     .get('/generate', async (req, res) => {
         const { style, message } = req.query;
 
         if (Number.isNaN(style) || typeof message !== 'string') {
-            return reject(res, 400, 'Malformed query parameters');
+            return reject(res, ErrorCode.MALFORMED_QUERY);
         }
 
         const wombo = WomboDream.buildDefaultInstance();
         try {
             const task = wombo.generatePicture(message, Number(style));
-            const timeout = new Promise((resolve, reject) => setTimeout(reject, 20000, 'task timed out'));
+            const timeout = new Promise((resolve, reject) => setTimeout(() => reject(new TimeoutError()), 20000));
 
             const result = await Promise.race([task, timeout]);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(result));
         } catch (e) {
             console.log(e);
-            return reject(res, 500, 'Failed to process wombo request');
+
+            if (e instanceof TimeoutError) {
+                reject(res, ErrorCode.TIMEOUT);
+            } else if (e instanceof WomboDream.WomboDream.TaskFailError) {
+                reject(res, ErrorCode.TASK_FAIL);
+            } else {
+                reject(res, ErrorCode.RATELIMIT);
+            }
         }
     })
     .listen(port);

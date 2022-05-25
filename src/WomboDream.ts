@@ -8,6 +8,8 @@ import { Style } from 'util';
 export const DEFAULT_DISPLAY_FREQ = 10;
 export const DEFAULT_CHECK_FREQ = 1000;
 
+export class TaskFailError extends Error { }
+
 export class WomboDream {
 	constructor(
 		public authentifier: GoogleAuthentifier,
@@ -18,7 +20,7 @@ export class WomboDream {
 		public apiGallerySuffix: string,
 		public originUrl: string,
 		public uploadUrl: string
-	) {}
+	) { }
 
 	buildApiTaskUrl(taskId: string): string {
 		return sprintf(this.apiTaskUrl, {
@@ -237,7 +239,7 @@ export class WomboDream {
 	async generatePicture(
 		prompt: string,
 		style: number,
-		progressCallback: (task: Task) => void = () => {},
+		progressCallback: (task: Task) => void = () => { },
 		input_image?: TaskImageInputSpec,
 		checkFrequency: number = DEFAULT_CHECK_FREQ,
 		display_freq: number = DEFAULT_DISPLAY_FREQ,
@@ -255,7 +257,7 @@ export class WomboDream {
 			while (!task.result?.final) {
 				task = await this.fetchTaskInfos(task.id);
 				progressCallback(task);
-				if (task.state === 'failed') throw new Error();
+				if (task.state === 'failed') throw new TaskFailError();
 				await sleep(checkFrequency);
 			}
 			return task;
