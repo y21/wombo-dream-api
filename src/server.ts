@@ -30,8 +30,9 @@ polka()
             return reject(res, ErrorCode.MALFORMED_QUERY);
         }
 
-        const wombo = WomboDream.buildDefaultInstance();
         try {
+            const wombo = WomboDream.buildDefaultInstance();
+
             const task = wombo.generatePicture(message, Number(style));
             const timeout = new Promise((resolve, reject) => setTimeout(() => reject(new TimeoutError()), 20000));
 
